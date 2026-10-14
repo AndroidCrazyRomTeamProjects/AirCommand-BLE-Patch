@@ -1,0 +1,38 @@
+From 9b1a03e67e3bf01e3593b4f61f74da0c029671dc Mon Sep 17 00:00:00 2001
+From: erikiorai <erikiorai@hotmail.com>
+Date: Mon, 12 Oct 2026 22:45:00 +0300
+Subject: [PATCH] Air Command: Support legacy S Pen models in BleSpenDeviceMainController
+
+---
+ smali/e3/o.smali | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/smali/e3/o.smali b/smali/e3/o.smali
+index e312456..f678901 100644
+--- a/smali/e3/o.smali
++++ b/smali/e3/o.smali
+@@ -357,6 +357,22 @@
+     const/4 v5, 0x2
+ 
+     if-eq v4, v5, :cond_1
++
++    const/4 v5, 0x4
++
++    if-eq v4, v5, :cond_1
++
++    const/4 v5, 0x5
++
++    if-eq v4, v5, :cond_1
++
++    const/4 v5, 0x6
++
++    if-eq v4, v5, :cond_1
++
++    const/4 v5, 0x7
++
++    if-eq v4, v5, :cond_1
+ 
+     new-instance v4, Ljava/lang/StringBuilder;
+ 
+-- 
+2.44.0

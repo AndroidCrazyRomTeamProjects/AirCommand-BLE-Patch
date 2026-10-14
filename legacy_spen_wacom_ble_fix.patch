@@ -1,0 +1,39 @@
+diff --git a/smali/c3/b.smali b/smali/c3/b.smali
+--- a/smali/c3/b.smali
++++ b/smali/c3/b.smali
+@@ -274 +274,3 @@
+-    packed-switch p0, :pswitch_data_0
++    const/4 v0, 0x5
++
++    if-ne p0, v0, :cond_legacy
+@@ -288 +290,17 @@
+-    :pswitch_0
++    :cond_legacy
++    const/4 v0, 0x3
++
++    if-eq p0, v0, :cond_null
++
++    const/4 v0, 0x4
++
++    if-eq p0, v0, :cond_null
++
++    const/4 v0, 0x0
++
++    if-eq p0, v0, :cond_null
++
++    const/4 v0, 0x1
++
++    if-ne p0, v0, :cond_null
++
+@@ -301 +319 @@
+-    :pswitch_1
++    :cond_null
+@@ -305,8 +322,0 @@
+-
+-    nop
+-
+-    :pswitch_data_0
+-    .packed-switch 0x0
+-        :pswitch_1
+-        :pswitch_0
+-    .end packed-switch

@@ -1,0 +1,5 @@
+/Aircommand_*
+/repository/*
+*.apk
+*.jadx
+*.old

@@ -1,0 +1,538 @@
+From 7aa755e1d4b02bf690da1aab3a65130499dc8fb8 Mon Sep 17 00:00:00 2001
+From: erikiorai <erikiorai@hotmail.com>
+Date: Mon, 17 Nov 2025 19:38:21 +0200
+Subject: [PATCH] Air Command: Added support for legacy BLE S Pen's
+
+---
+ smali/I2/c.smali                 |   77 +-
+ smali/androidx/core/view/n.smali |  101 +-
+ smali/x1/f.smali                 |   76 +-
+ smali/z1/a.smali                 |  139 +-
+ 4 files changed, 290 insertions(+), 103 deletions(-)
+
+diff --git a/smali/I2/c.smali b/smali/I2/c.smali
+index 633dea5..ce463da 100644
+--- a/smali/I2/c.smali
++++ b/smali/I2/c.smali
+@@ -9,40 +9,89 @@
+ 
+ # direct methods
+ .method static constructor <clinit>()V
+-    .locals 3
++    .registers 4
+ 
++    # Create array sized to number of enum values
+     invoke-static {}, Lz1/a;->values()[Lz1/a;
+ 
+     move-result-object v0
+ 
+     array-length v0, v0
+-
++    
+     new-array v0, v0, [I
+ 
++    # ordinal 2 → 1
+     const/4 v1, 0x1
+ 
+     const/4 v2, 0x2
+ 
+-    :try_start_0
++    :try_start_9
+     aput v1, v0, v2
+-    :try_end_0
+-    .catch Ljava/lang/NoSuchFieldError; {:try_start_0 .. :try_end_0} :catch_0
++    :try_end_b
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_9 .. :try_end_b} :catch_b
+ 
+-    :catch_0
+-    :try_start_1
++    :catch_b
++    # ordinal 1 → 2
++    :try_start_b
+     aput v2, v0, v1
+-    :try_end_1
+-    .catch Ljava/lang/NoSuchFieldError; {:try_start_1 .. :try_end_1} :catch_1
++    :try_end_d
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_b .. :try_end_d} :catch_d
+ 
+-    :catch_1
++    :catch_d
++    # ordinal 3 → 3
+     const/4 v1, 0x3
+-
+-    :try_start_2
++    :try_start_e
+     aput v1, v0, v1
+-    :try_end_2
+-    .catch Ljava/lang/NoSuchFieldError; {:try_start_2 .. :try_end_2} :catch_2
++    :try_end_10
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_e .. :try_end_10} :catch_10
++
++    :catch_10
++
++    # --------------------------------------
++    # NEW ENUMS (safe to map to unique IDs)
++    # --------------------------------------
++
++    # CROWN → ordinal 4
++    const/4 v1, 0x4
++    const/4 v2, 0x4
++    :try_start_11
++    aput v2, v0, v1
++    :try_end_12
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_11 .. :try_end_12} :catch_12
++
++    :catch_12
++
++    # CANVAS → ordinal 5
++    const/4 v1, 0x5
++    const/4 v2, 0x5
++    :try_start_13
++    aput v2, v0, v1
++    :try_end_14
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_13 .. :try_end_14} :catch_14
++
++    :catch_14
++
++    # RAINBOW → ordinal 6
++    const/4 v1, 0x6
++    const/4 v2, 0x6
++    :try_start_15
++    aput v2, v0, v1
++    :try_end_16
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_15 .. :try_end_16} :catch_16
++
++    :catch_16
++
++    # DAVINCI → ordinal 7
++    const/4 v1, 0x7
++    const/4 v2, 0x7
++    :try_start_17
++    aput v2, v0, v1
++    :try_end_18
++    .catch Ljava/lang/NoSuchFieldError; {:try_start_17 .. :try_end_18} :catch_18
++
++    :catch_18
+ 
+-    :catch_2
++    # Store array
+     sput-object v0, LI2/c;->a:[I
+ 
+     return-void
+diff --git a/smali/androidx/core/view/n.smali b/smali/androidx/core/view/n.smali
+index e72eb22..e9c6746 100644
+--- a/smali/androidx/core/view/n.smali
++++ b/smali/androidx/core/view/n.smali
+@@ -3893,52 +3893,89 @@
+ .end method
+ 
+ .method public static n(Lz1/a;)Lb3/d;
+-    .locals 4
++    .registers 5
+ 
++    # sanity check
+     invoke-static {p0}, LC1/b;->c(Ljava/lang/Object;)V
+ 
++    # get enum ordinal
+     invoke-virtual {p0}, Ljava/lang/Enum;->ordinal()I
+ 
+     move-result v0
+ 
+-    const/4 v1, 0x1
++    # ---------------------------------------------
++    #  NEW ENUM MAPPINGS
++    # ---------------------------------------------
+ 
+-    if-eq v0, v1, :cond_2
++    # ordinal 4 → CROWN
++    const/4 v1, 0x4
++    if-ne v0, v1, :check_canvas
++    new-instance v0, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/crown/BleSpenCrownFactory;
++    invoke-direct {v0}, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/crown/BleSpenCrownFactory;-><init>()V
++    goto :build_log
++
++    :check_canvas
++    # ordinal 6 → CANVAS
++    const/4 v1, 0x6
++    if-ne v0, v1, :check_rainbow
++    new-instance v0, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/canvas/BleSpenCanvasFactory;
++    invoke-direct {v0}, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/canvas/BleSpenCanvasFactory;-><init>()V
++    goto :build_log
++
++    :check_rainbow
++    # ordinal 7 → RAINBOW
++    const/4 v1, 0x7
++    if-ne v0, v1, :check_davinci
++    new-instance v0, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/rainbow/BleSpenRainbowFactory;
++    invoke-direct {v0}, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/rainbow/BleSpenRainbowFactory;-><init>()V
++    goto :build_log
++
++    :check_davinci
++    # ordinal 5 → DAVINCI
++    const/4 v1, 0x5
++    if-ne v0, v1, :check_sticky
++    new-instance v0, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/davinci/BleSpenDavinciFactory;
++    invoke-direct {v0}, Lcom/samsung/android/service/aircommand/remotespen/core/device/control/factory/davinci/BleSpenDavinciFactory;-><init>()V
++    goto :build_log
++
++    # ---------------------------------------------
++    #  ORIGINAL MAPPINGS
++    # ---------------------------------------------
++
++    :check_sticky
++    # ordinal 1 → STICKY (existing)
++    const/4 v1, 0x1
++    if-ne v0, v1, :check_builtin
++    new-instance v0, Lb3/e;   # BleSpenStickyFactory
++    invoke-direct {v0}, Lb3/e;-><init>()V
++    goto :build_log
+ 
++    :check_builtin
++    # ordinal 2 → BUILTIN
+     const/4 v1, 0x2
++    if-ne v0, v1, :check_ext1
++    new-instance v0, Lb3/a;   # BleSpenBuiltinFactory
++    invoke-direct {v0}, Lb3/a;-><init>()V
++    goto :build_log
+ 
+-    if-eq v0, v1, :cond_1
+-
++    :check_ext1
++    # ordinal 3 → EXT1 (existing)
+     const/4 v1, 0x3
++    if-ne v0, v1, :fallback
++    new-instance v0, Lb3/c;   # BleSpenExt1Factory
++    invoke-direct {v0}, Lb3/c;-><init>()V
++    goto :build_log
+ 
+-    if-eq v0, v1, :cond_0
+-
+-    new-instance v0, Lb3/b;
++    :fallback
++    # ordinal 0 or unknown → NONBLE
++    new-instance v0, Lb3/b;   # fallback non-BLE
++    invoke-direct {v0}, Lb3/b;-><init>()V
+ 
+-    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
++    # ---------------------------------------------
++    #   LOG OUTPUT (unchanged)
++    # ---------------------------------------------
+ 
+-    goto :goto_0
+-
+-    :cond_0
+-    new-instance v0, Lb3/c;
+-
+-    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+-
+-    goto :goto_0
+-
+-    :cond_1
+-    new-instance v0, Lb3/a;
+-
+-    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+-
+-    goto :goto_0
+-
+-    :cond_2
+-    new-instance v0, Lb3/e;
+-
+-    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+-
+-    :goto_0
++    :build_log
+     new-instance v1, Ljava/lang/StringBuilder;
+ 
+     const-string v2, "create : modelName="
+@@ -4026,7 +4063,7 @@
+     const/4 v1, 0x0
+ 
+     const-string v2, "SpenDeviceFactoryCreator"
+-
++    
+     invoke-static {v2, p0, v1}, Ln5/a;->o0(Ljava/lang/String;Ljava/lang/String;Lorg/json/JSONException;)I
+ 
+     return-object v0
+diff --git a/smali/x1/f.smali b/smali/x1/f.smali
+index 91415dc..db12fcf 100644
+--- a/smali/x1/f.smali
++++ b/smali/x1/f.smali
+@@ -523,52 +523,90 @@
+ .end method
+ 
+ .method public static final c()Lz1/a;
+-    .locals 2
++    .registers 3
+ 
++    #---------------------------------------------
++    # 1. Check if BLE S-Pen is supported
++    #---------------------------------------------
+     sget-object v0, Lx1/f;->b:Lx4/d;
+ 
+     iget-boolean v0, v0, Lx4/d;->b:Z
+-
+-    if-nez v0, :cond_0
+-
++    if-nez v0, :cond_continue
+     const/4 v0, 0x0
+ 
+     return-object v0
+ 
+-    :cond_0
++    :cond_continue
++    #-----------------------------------------------------------------------
++    # 2. Load the BLE model string from DeviceFeatures.BLE_SPEN_SPECS
++    #-----------------------------------------------------------------------
+     sget-object v0, Lx1/f;->a:LV0/e;
+ 
+     iget-object v0, v0, LV0/e;->c:Ljava/lang/String;
+ 
+-    const-string v1, "sticky"
++    #---------------------------------------------
++    # 3. MATCH S-PEN MODEL STRINGS
++    #---------------------------------------------
+ 
++    # crown → CROWN (h)
++    const-string v1, "crown"
+     invoke-static {v0, v1}, LU5/i;->a(Ljava/lang/Object;Ljava/lang/Object;)Z
+-
+     move-result v1
++    if-eqz v1, :check_canvas
++    sget-object v0, Lz1/a;->h:Lz1/a;
++    return-object v0
+ 
+-    if-eqz v1, :cond_1
++    :check_canvas
++    # canvas → CANVAS (j)
++    const-string v1, "canvas"
++    invoke-static {v0, v1}, LU5/i;->a(Ljava/lang/Object;Ljava/lang/Object;)Z
++    move-result v1
++    if-eqz v1, :check_rainbow
++    sget-object v0, Lz1/a;->j:Lz1/a;
++    return-object v0
+ 
+-    sget-object v0, Lz1/a;->d:Lz1/a;
++    :check_rainbow
++    # rainbow → RAINBOW (k)
++    const-string v1, "rainbow"
++    invoke-static {v0, v1}, LU5/i;->a(Ljava/lang/Object;Ljava/lang/Object;)Z
++    move-result v1
++    if-eqz v1, :check_davinci
++    sget-object v0, Lz1/a;->k:Lz1/a;
++    return-object v0
+ 
+-    goto :goto_0
++    :check_davinci
++    # davinci → DAVINCI (i)
++    const-string v1, "davinci"
++    invoke-static {v0, v1}, LU5/i;->a(Ljava/lang/Object;Ljava/lang/Object;)Z
++    move-result v1
++    if-eqz v1, :check_sticky
++    sget-object v0, Lz1/a;->i:Lz1/a;
++    return-object v0
+ 
+-    :cond_1
+-    const-string v1, "builtin"
++    :check_sticky
++    # sticky → STICKY (d)
++    const-string v1, "sticky"
+ 
+     invoke-static {v0, v1}, LU5/i;->a(Ljava/lang/Object;Ljava/lang/Object;)Z
+ 
+-    move-result v0
++    move-result v1
++    if-eqz v1, :check_builtin
++    sget-object v0, Lz1/a;->d:Lz1/a;
++    return-object v0
+ 
+-    if-eqz v0, :cond_2
++    :check_builtin
++    # builtin → BUILTIN (e)
++    const-string v1, "builtin"
+ 
++    invoke-static {v0, v1}, LU5/i;->a(Ljava/lang/Object;Ljava/lang/Object;)Z
++    move-result v1
++    if-eqz v1, :fallback_nonble
+     sget-object v0, Lz1/a;->e:Lz1/a;
++    return-object v0
+ 
+-    goto :goto_0
+-
+-    :cond_2
++    :fallback_nonble
++    # 4. Default → NONBLE (c)
+     sget-object v0, Lz1/a;->c:Lz1/a;
+-
+-    :goto_0
+     return-object v0
+ .end method
+ 
+diff --git a/smali/z1/a.smali b/smali/z1/a.smali
+index b6db6c0..9ad8d39 100644
+--- a/smali/z1/a.smali
++++ b/smali/z1/a.smali
+@@ -12,6 +12,14 @@
+ 
+ .field public static final enum f:Lz1/a;
+ 
++.field public static final enum h:Lz1/a;    # CROWN
++
++.field public static final enum i:Lz1/a;    # DAVINCI
++
++.field public static final enum j:Lz1/a;    # CANVAS
++
++.field public static final enum k:Lz1/a;    # RAINBO
++
+ .field public static final synthetic g:[Lz1/a;
+ 
+ 
+@@ -19,9 +27,8 @@
+ .field public final b:Ljava/lang/String;
+ 
+ 
+-# direct methods
+ .method static constructor <clinit>()V
+-    .locals 7
++    .locals 14
+ 
+     new-instance v0, Lz1/a;
+ 
+@@ -33,43 +40,99 @@
+ 
+     sput-object v0, Lz1/a;->c:Lz1/a;
+ 
+-    new-instance v1, Lz1/a;
+-
+-    const-string v2, "STICKY"
+-
+-    const/4 v3, 0x1
+-
+-    invoke-direct {v1, v2, v3, v2}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
+-
+-    sput-object v1, Lz1/a;->d:Lz1/a;
+-
+-    new-instance v2, Lz1/a;
+-
+-    const-string v3, "BUILTIN"
+-
+-    const/4 v4, 0x2
+-
+-    invoke-direct {v2, v3, v4, v3}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
+-
+-    sput-object v2, Lz1/a;->e:Lz1/a;
+-
+     new-instance v3, Lz1/a;
+-
+-    const/4 v4, 0x3
+-
+-    const-string v5, "EJ-P5450"
+-
+-    const-string v6, "PRO"
+-
+-    invoke-direct {v3, v6, v4, v5}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
+-
+-    sput-object v3, Lz1/a;->f:Lz1/a;
+-
+-    filled-new-array {v0, v1, v2, v3}, [Lz1/a;
+-
+-    move-result-object v0
+-
+-    sput-object v0, Lz1/a;->g:[Lz1/a;
++    const-string v4, "STICKY"
++    const/4 v5, 0x1
++    invoke-direct {v3, v4, v5, v4}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v3, Lz1/a;->d:Lz1/a;
++
++    new-instance v6, Lz1/a;
++    const-string v7, "BUILTIN"
++    const/4 v8, 0x2
++    invoke-direct {v6, v7, v8, v7}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v6, Lz1/a;->e:Lz1/a;
++
++    new-instance v9, Lz1/a;
++    const/4 v10, 0x3
++    const-string v11, "EJ-P5450"
++    const-string v12, "PRO"
++    invoke-direct {v9, v12, v10, v11}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v9, Lz1/a;->f:Lz1/a;
++
++    # CROWN (ordinal 4)
++    new-instance v10, Lz1/a;
++    const-string v11, "CROWN"
++    const/4 v12, 0x4
++    invoke-direct {v10, v11, v12, v11}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v10, Lz1/a;->h:Lz1/a;
++
++    # DAVINCI (ordinal 5)
++    new-instance v11, Lz1/a;
++    const-string v12, "DAVINCI"
++    const/4 v1, 0x5
++    invoke-direct {v11, v12, v1, v12}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v11, Lz1/a;->i:Lz1/a;
++
++    # CANVAS (ordinal 6)
++    new-instance v12, Lz1/a;
++    const-string v1, "CANVAS"
++    const/4 v2, 0x6
++    invoke-direct {v12, v1, v2, v1}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v12, Lz1/a;->j:Lz1/a;
++
++    # RAINBOW (ordinal 7)
++    new-instance v1, Lz1/a;
++    const-string v2, "RAINBOW"
++    const/4 v4, 0x7
++    invoke-direct {v1, v2, v4, v2}, Lz1/a;-><init>(Ljava/lang/String;ILjava/lang/String;)V
++    sput-object v1, Lz1/a;->k:Lz1/a;
++
++    # $VALUES array of size 8
++    const/16 v13, 0x8
++    new-array v13, v13, [Lz1/a;
++
++    # index 0 → NONBLE
++    const/4 v0, 0x0
++    sget-object v1, Lz1/a;->c:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 1 → STICKY
++    const/4 v0, 0x1
++    sget-object v1, Lz1/a;->d:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 2 → BUILTIN
++    const/4 v0, 0x2
++    sget-object v1, Lz1/a;->e:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 3 → PRO
++    const/4 v0, 0x3
++    sget-object v1, Lz1/a;->f:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 4 → CROWN
++    const/4 v0, 0x4
++    sget-object v1, Lz1/a;->h:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 5 → DAVINCI
++    const/4 v0, 0x5
++    sget-object v1, Lz1/a;->i:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 6 → CANVAS
++    const/4 v0, 0x6
++    sget-object v1, Lz1/a;->j:Lz1/a;
++    aput-object v1, v13, v0
++
++    # index 7 → RAINBOW
++    const/4 v0, 0x7
++    sget-object v1, Lz1/a;->k:Lz1/a;
++    aput-object v1, v13, v0
++
++    # set static field
++    sput-object v13, Lz1/a;->g:[Lz1/a;
+ 
+     return-void
+ .end method
+\ No newline at end of file
+-- 
+2.44.0
